@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>The Wall</title>
+</head>
+<body onload="init()">
+<div id="messageBox"></div>
+<br/>
+<div>
+    <input id="titleField" type="text" placeholder="Message Title..."/> 
+    <br/>
+    <textarea id="bodyField" placeholder="Message body..."
+    ></textarea>
+    <br/>
+    <button id="submitMessage">Leave Message</button>
+</div>
+<script type="text/javascript" src="http.js"></script>
+<script type="text/javascript">
+    
+    
+    _("submitMessage").addEventListener("click",function(){
+        var title = _("titleField").value;
+        var body = _("bodyField").value;
+
+        if(isBlank(title) || isBlank(body)){
+            alert("Message title or body can't be blank");
+            return;
+        }
+        
+        _("titleField").value = "";
+        _("bodyField").value = "";
+        
+        
+         var data ={
+            "id":getRandomInt(0,1000),
+            "title":title,
+            "body":body,
+            "likes": -1
+        };
+        
+        http("/messages").post(data).send(201,function(request){
+            var message = JSON.parse(request.responseText);
+            getLike(message);
+        },onError);
+    });
+
+    function init(){
+        http("/messages").send(200,function(request){
+            
+            var data = JSON.parse(request.responseText);
+            for(i = 0; i < data.length; i++) {
+                getLike(data[i]);
+            }
+        },onError); 
+    }
+    
+    function getLike(message){
+        http("/likes/"+message.id).send(200,function(request){
+            var like = JSON.parse(request.responseText);
+            message.likes = like.count;
+            addMessage(message);
+        },onError);
+    }
+    
+    function onError(request){
+         console.log("Fail at response " + request.status);
+    }
+    
+    function addMessage(message){
+        _("messageBox").innerHTML 
+            = "<div>{0}&nbsp{1}<br/>&nbsp;&nbsp;&nbsp;&nbsp;{2}<br/></div>".
+        format(message.title,makeLike(message),message.body) + _("messageBox").innerHTML ;
+    }
+    
+    function makeLike(message){
+        return "<a id='like_{0}' class='like' href='#' onclick='sendLike({1})'>+{2}</a>".format(message.id,message.id,message.likes);
+    }
+    
+    function getRandomInt(min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return (Math.floor(Math.random() * (max - min)) + min).toString();
+    }
+    
+    function sendLike(likeid){
+        http("/likes/"+likeid).post().send(200,function(request){
+            var like = JSON.parse(request.responseText);
+            _("like_"+likeid).innerHTML = "+" + like.count;
+            _("like_"+likeid).onclick = false;
+        },onError);
+    }
+    
+    function _(id){
+        return document.getElementById(id);
+    }
+    
+    function isBlank(str) {
+        return (!str || /^\s*$/.test(str));
+    }
+    
+    String.prototype.format = function() {
+        var formatted = this;
+        for( var arg in arguments ) {
+            formatted = formatted.replace("{" + arg + "}", arguments[arg]);
+        }
+        return formatted;
+    };
+</script>
+</body>
+</html>

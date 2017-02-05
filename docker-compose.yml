@@ -1,0 +1,35 @@
+#My MicroService
+version: '2'
+services:
+#MicroServices
+#Like MicroService
+ like:
+  build: ./likesService/
+  links:
+   - redis
+ redis:
+  image: "redis:alpine"
+#Message MicroService
+ message:
+  build: ./messageService/
+  links:
+   - mongo
+ mongo:
+  image: "mongo"
+#API Getaway
+ gateway:
+  build: ./api-gateway/
+  volumes:
+    - "./api-gateway/app:/usr/share/nginx/html"
+  links:
+    - message
+    - like
+  ports:
+    - "80:80"
+  
+  
+
+
+
+
+
